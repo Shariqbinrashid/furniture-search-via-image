@@ -1,0 +1,26 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+
+# Generated data files (rebuild locally with build_registry.py + build_index.py)
+data/
+
+# Raw image assets (too large for GitHub)
+Product Assets/
+
+# HF Spaces deployment repo
+furniture-search/
+
+# Temp scripts
+upload_to_hf.py
+
+# Claude Code / Gradio internals
+.claude/
+.gradio/
+
+# macOS
+.DS_Store
