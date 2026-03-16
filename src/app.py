@@ -131,6 +131,7 @@ with gr.Blocks(title="Furniture Image Search") as demo:
             label="Remove background (enable for real-world/in-room photos)",
             info="Uses rembg. Avoid for clean product shots — can hurt glass/transparent surfaces.",
         )
+        csv_download = gr.File(label="Download Results CSV (local only)", interactive=False)
 
     search_btn = gr.Button("Search", variant="primary")
     status_box = gr.Textbox(label="Status", interactive=False)
@@ -143,8 +144,6 @@ with gr.Blocks(title="Furniture Image Search") as demo:
             with gr.Column():
                 out_imgs.append(gr.Image(label=f"Match {i+1}", height=220))
                 out_labels.append(gr.Textbox(label="", interactive=False, lines=2))
-
-    csv_download = gr.File(label="Download Results CSV (local only)", interactive=False)
 
     search_btn.click(
         fn=search,
