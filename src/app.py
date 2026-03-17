@@ -10,7 +10,7 @@ from datetime import datetime
 import gradio as gr
 from PIL import Image
 
-from search import MODELS, TOP_K, get_engine
+from search import MODELS, TOP_K, ensemble_search, get_engine
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_PATH = os.path.join(BASE_DIR, "data", "search_results.csv")
@@ -69,12 +69,14 @@ def search(query_image, model_key, use_bg_removal):
         status_msg = None
 
     try:
-        engine = get_engine(model_key)
+        if model_key == "ensemble":
+            results = ensemble_search(pil_image, top_k=TOP_K)
+        else:
+            engine = get_engine(model_key)
+            results = engine.search(pil_image, top_k=TOP_K)
     except FileNotFoundError as e:
         empty = [None] * TOP_K + [""] * TOP_K
         return *empty, str(e), None
-
-    results = engine.search(pil_image, top_k=TOP_K)
 
     if not results:
         empty = [None] * TOP_K + [""] * TOP_K
@@ -89,7 +91,10 @@ def search(query_image, model_key, use_bg_removal):
     def make_label(r):
         if r is None:
             return ""
-        return f"{r['name']}\n${r['price']:,.2f}  |  Score: {r['score']:.4f}"
+        base = f"{r['name']}\n${r['price']:,.2f}  |  Score: {r['score']:.4f}"
+        if "score_dinov2" in r:
+            base += f"  (dino: {r['score_dinov2']:.4f}, sig: {r['score_siglip']:.4f})"
+        return base
 
     def load_image(r):
         if r is None or not r["images"]:
@@ -122,7 +127,7 @@ with gr.Blocks(title="Furniture Image Search") as demo:
     with gr.Accordion("⚙️ Developer Settings", open=False):
         model_dropdown = gr.Dropdown(
             choices=MODEL_CHOICES,
-            value="clip-base",
+            value="ensemble",
             label="Model",
             info="Switch model (first use downloads & builds embeddings)",
         )

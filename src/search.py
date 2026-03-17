@@ -41,6 +41,12 @@ MODELS = {
         "dim": 768,
         "label": "DINOv2 B/14",
     },
+    "ensemble": {
+        "hf_id": None,
+        "type": "ensemble",
+        "dim": None,
+        "label": "DINOv2 + SigLIP Ensemble",
+    },
 }
 
 _engine_cache: dict = {}
@@ -50,6 +56,38 @@ def get_engine(model_key: str) -> "ImageSearchEngine":
     if model_key not in _engine_cache:
         _engine_cache[model_key] = ImageSearchEngine(model_key)
     return _engine_cache[model_key]
+
+
+def ensemble_search(image: Image.Image, top_k: int = TOP_K, use_tta: bool = True) -> list:
+    """Average DINOv2 and SigLIP cosine scores, rank by combined score."""
+    eng_dino = get_engine("dinov2")
+    eng_sig = get_engine("siglip")
+
+    q_dino = eng_dino.embed_query(image, use_tta=use_tta)
+    q_sig = eng_sig.embed_query(image, use_tta=use_tta)
+
+    scores_dino = eng_dino.embeddings @ q_dino  # (240,)
+    scores_sig = eng_sig.embeddings @ q_sig      # (240,)
+    scores_avg = (scores_dino + scores_sig) / 2.0
+
+    top_indices = np.argsort(scores_avg)[::-1][:top_k]
+
+    results = []
+    for idx in top_indices:
+        score = float(scores_avg[idx])
+        if score < NO_MATCH_THRESHOLD:
+            break
+        product = eng_dino.product_index[str(idx)]
+        results.append({
+            "name": product["name"],
+            "price": product["price"],
+            "score": score,
+            "score_dinov2": float(scores_dino[idx]),
+            "score_siglip": float(scores_sig[idx]),
+            "images": product["images"],
+        })
+
+    return results
 
 
 def _tta_crops(image: Image.Image) -> list:

@@ -4,6 +4,6 @@ Pillow>=10.0.0
 pandas>=2.0.0
 numpy>=1.24.0
 gradio>=4.0.0
-rembg>=2.0.0
+# rembg[cpu] — no onnxruntime wheel for Python 3.13 yet; works on HF Spaces (py3.10/3.11)
 sentencepiece>=0.1.99
 protobuf>=3.20.0
